@@ -1,0 +1,8 @@
+# 构建产物 / 临时文件
+*.zip
+tmp_pkg/
+__pycache__/
+*.pyc
+
+# 本地预览日志
+/serve.log

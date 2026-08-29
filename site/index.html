@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SneakToken — Free AI API &amp; GPU Credits, Verified</title>
+<meta name="description" content="Sneak past the paywall. A hand-checked directory of free AI API and GPU compute tiers — real quotas, real rate limits, and whether they want your credit card.">
+<link rel="canonical" href="https://sneaktoken.com/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SneakToken">
+<meta property="og:title" content="SneakToken — Free AI API &amp; GPU Credits, Verified">
+<meta property="og:description" content="Every free AI API and GPU tier worth claiming, with the numbers the landing pages leave out.">
+<meta property="og:url" content="https://sneaktoken.com/">
+<meta property="og:locale" content="en_US">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SneakToken — Free AI API &amp; GPU Credits, Verified">
+<meta name="twitter:description" content="Every free AI API and GPU tier worth claiming, with the numbers the landing pages leave out.">
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230A0A0B'/%3E%3Cpath d='M9 21.5 15.5 10h2.2L11.2 21.5z' fill='%235BE9A8'/%3E%3Ccircle cx='22' cy='13' r='2.4' fill='%235BE9A8'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/styles.css">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "SneakToken",
+  "url": "https://sneaktoken.com/",
+  "description": "Hand-checked directory of free AI API and GPU compute tiers.",
+  "inLanguage": "en"
+}
+</script>
+</head>
+<body>
+
+<a class="skip" href="#directory">Skip to directory</a>
+
+<!-- ============ HEADER ============ -->
+<header class="hdr" id="hdr">
+  <div class="wrap hdr-in">
+    <a class="brand" href="/" aria-label="SteakToken home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="26" height="26"><path d="M9 21.5 15.5 10h2.2L11.2 21.5z" fill="currentColor"/><circle cx="22" cy="12.5" r="2.4" fill="currentColor"/></svg>
+      </span>
+      <span class="brand-txt">sneak<span class="brand-accent">token</span></span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="#directory">Directory</a>
+      <a href="#compare">Compare</a>
+      <a href="#pick">How to pick</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <a class="btn btn-sm btn-solid" href="#directory">Browse free tiers</a>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-eyebrow">
+      <span class="pulse" aria-hidden="true"></span>
+      Every number checked against the provider's own docs · <span id="heroCount">—</span> offers · Updated <time id="heroDate">—</time>
+    </div>
+    <h1 class="hero-h1">
+      Sneak past<br>the <em class="grad">paywall</em>.
+    </h1>
+    <p class="hero-sub">
+      Every free tier for AI APIs and GPU compute worth claiming — with the numbers the
+      landing pages leave out. The real quota, the rate limit that actually bites,
+      and whether they want your card.
+    </p>
+
+    <div class="hero-search">
+      <svg class="hero-search-ico" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15ZM16.5 16.5 21 21"/></svg>
+      <input type="search" id="q" placeholder="Search a provider, model, or use case…" autocomplete="off" aria-label="Search free tiers">
+      <kbd>/</kbd>
+    </div>
+
+    <ul class="hero-stats" id="heroStats">
+      <li><strong data-stat="total">—</strong><span>Offers tracked</span></li>
+      <li><strong data-stat="nocard">—</strong><span>No credit card</span></li>
+      <li><strong data-stat="gpu">—</strong><span>GPU compute</span></li>
+      <li><strong data-stat="forever">—</strong><span>Never expires</span></li>
+    </ul>
+  </div>
+  <div class="hero-glow" aria-hidden="true"></div>
+</section>
+
+<!-- ============ DIRECTORY ============ -->
+<main id="directory" class="wrap">
+
+  <div class="filters" id="filters">
+    <div class="filter-row">
+      <span class="filter-lbl">Type</span>
+      <div class="chips" data-group="category" role="group" aria-label="Filter by type"></div>
+    </div>
+    <div class="filter-row">
+      <span class="filter-lbl">Terms</span>
+      <div class="chips" data-group="badge" role="group" aria-label="Filter by terms"></div>
+    </div>
+    <div class="filter-row filter-row-end">
+      <span class="filter-lbl">Region</span>
+      <div class="chips" data-group="region" role="group" aria-label="Filter by region"></div>
+      <div class="spacer"></div>
+      <label class="sortby">
+        <span>Sort</span>
+        <select id="sort" aria-label="Sort offers">
+          <option value="featured">Featured</option>
+          <option value="name">Name A–Z</option>
+          <option value="nocard">No card first</option>
+        </select>
+      </label>
+      <button class="btn-reset" id="reset" type="button" hidden>Clear ×</button>
+    </div>
+  </div>
+
+  <p class="result-line" id="resultLine" role="status" aria-live="polite"></p>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="empty" id="empty" hidden>
+    <p class="empty-h">Nothing matches that.</p>
+    <p class="empty-p">Try loosening the filters — or <button class="linklike" id="emptyReset" type="button">clear them all</button>.</p>
+  </div>
+</main>
+
+<!-- ============ COMPARE ============ -->
+<section class="band" id="compare">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="sec-h">Side-by-side</h2>
+      <p class="sec-p">The same offers, stripped of marketing. Scroll horizontally on mobile.</p>
+    </div>
+    <div class="tablewrap">
+      <table class="cmp" id="cmp">
+        <thead>
+          <tr>
+            <th scope="col">Provider</th>
+            <th scope="col">Free quota</th>
+            <th scope="col">Rate limit</th>
+            <th scope="col">Card?</th>
+            <th scope="col">Expires</th>
+            <th scope="col">Best for</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HOW TO PICK ============ -->
+<section class="band band-alt" id="pick">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="sec-h">How to pick</h2>
+      <p class="sec-p">Skip the comparison paralysis. Start from what you're building.</p>
+    </div>
+    <div class="pick-grid" id="pickGrid"></div>
+  </div>
+</section>
+
+<!-- ============ TRUST / METHOD ============ -->
+<section class="band" id="method">
+  <div class="wrap method">
+    <div>
+      <h2 class="sec-h">Why free tiers quietly expire</h2>
+      <p class="prose">
+        Providers publish a generous free tier to win developers, then quietly cut it once the
+        growth target is met. The number on the pricing page is often the number from launch
+        day — not the number you’ll actually hit today.
+      </p>
+      <p class="prose">
+        Three corrections from our most recent pass. All three are still circulating as
+        current advice:
+      </p>
+      <ul class="corrections">
+        <li><b>GitHub Models</b> was fully retired on 30 July 2026 — and is still the first thing most searches return.</li>
+        <li><b>Cerebras</b> ended its no-card allowance. It is now a $5 trial that needs a verified payment method and expires in 30 days.</li>
+        <li><b>Kaggle</b> never published a weekly GPU quota. The widely-cited “30 hours a week” belongs to paid Colab plans.</li>
+      </ul>
+      <p class="prose">
+        So every entry here is stamped with the date it was last verified, and that date links
+        to the page we read. If a quota changed, it gets corrected. If a tier got killed, it
+        comes off the list rather than being left to rot.
+      </p>
+      <p class="prose prose-note">
+        <strong>One rule we hold to:</strong> if we couldn't confirm a number on an official
+        page, we print <em>unknown</em> instead of guessing. A directory you can't trust is
+        worse than no directory.
+      </p>
+    </div>
+    <ul class="method-list">
+      <li><span aria-hidden="true">✓</span><div><strong>Quotas read off the source</strong><p>Pricing pages and rate-limit docs, not blog posts about them.</p></div></li>
+      <li><span aria-hidden="true">✓</span><div><strong>Card requirement checked</strong><p>"Free" that needs a card is a different decision for a lot of people.</p></div></li>
+      <li><span aria-hidden="true">✓</span><div><strong>Training-opt-out flagged</strong><p>Free tiers often buy your prompts. We say so when that's the trade.</p></div></li>
+      <li><span aria-hidden="true">✓</span><div><strong>Code that runs</strong><p>Shortest path from signup to a 200 response, pasted as-is.</p></div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="band band-alt" id="faq">
+  <div class="wrap wrap-narrow">
+    <div class="sec-head">
+      <h2 class="sec-h">FAQ</h2>
+    </div>
+    <div class="faq" id="faqList"></div>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="cta">
+  <div class="wrap cta-in">
+    <h2 class="cta-h">New tiers get added as they appear.</h2>
+    <p class="cta-p">Get the change log when something breaks, gets cut, or gets better. No spam, unsubscribe in one click.</p>
+    <form class="cta-form" id="subForm" novalidate>
+      <input type="email" id="subEmail" placeholder="you@example.com" aria-label="Email address" required>
+      <button class="btn btn-solid" type="submit">Notify me</button>
+    </form>
+    <p class="cta-fine" id="subMsg" role="status" aria-live="polite"></p>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="ftr">
+  <div class="wrap ftr-in">
+    <div class="ftr-brand">
+      <span class="brand-txt">sneak<span class="brand-accent">token</span></span>
+      <p class="ftr-tag">Sneak past the paywall. Free AI API &amp; GPU tiers, verified.</p>
+    </div>
+    <nav class="ftr-nav" aria-label="Footer">
+      <div><h3>Directory</h3><a href="#directory">All offers</a><a href="#compare">Compare</a><a href="#pick">How to pick</a></div>
+      <div><h3>About</h3><a href="#method">Methodology</a><a href="#faq">FAQ</a><a href="#" id="ftrContact">Contact</a></div>
+      <div><h3>Legal</h3><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="disclosure.html">Affiliate disclosure</a></div>
+    </nav>
+  </div>
+  <div class="wrap ftr-bot">
+    <p>Last verified <time id="ftrDate">—</time>. Free tiers change without notice — confirm on the provider's own pricing page before you build on it.</p>
+    <p class="ftr-copy">© <span id="year">2026</span> sneaktoken.com</p>
+  </div>
+</footer>
+
+<script src="data/offers.js"></script>
+<script src="data/content.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

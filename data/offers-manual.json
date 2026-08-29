@@ -1,0 +1,25 @@
+[
+  {
+    "id": "cerebras",
+    "name": "Cerebras Inference",
+    "tagline": "The fastest inference you can buy — but as of 2026, no longer the best thing you can get for free.",
+    "badge": "one-time",
+    "category": ["llm", "agent"],
+    "quota": "$5 in one-time trial credits. This is not a daily token allowance — every call is billed against the credit.",
+    "limits": "5 RPM · 30K TPM uncached (90K total) · 1M tokens/day ceiling, on gpt-oss-120b and gemma-4-31b.",
+    "card_required": "Yes",
+    "expiry": "Credits expire 30 days after being granted, spent or not.",
+    "region": "Global",
+    "region_notes": "unknown",
+    "data_training": "unknown",
+    "path": "cloud.cerebras.ai → sign up → add a payment method (required to activate) → API Keys → Create key",
+    "code": "from openai import OpenAI\nclient = OpenAI(api_key=\"csk-xxx\", base_url=\"https://api.cerebras.ai/v1\")\nr = client.chat.completions.create(model=\"gpt-oss-120b\", messages=[{\"role\":\"user\",\"content\":\"hi\"}])",
+    "verdict": "Cerebras retired its no-card free tier in 2026. What remains is a $5 trial that needs a card and dies in 30 days. Plenty of sites still list it as \"no card, 1M tokens/day\" — that stopped being true. Come here for speed, not for free.",
+    "best_for": ["Speed benchmarking", "Testing wafer-scale inference"],
+    "url": "https://cloud.cerebras.ai",
+    "checked": "2026-08-29",
+    "featured": 18,
+    "source": "https://inference-docs.cerebras.ai/support/rate-limits",
+    "confidence": "official"
+  }
+]

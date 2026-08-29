@@ -1,0 +1,30 @@
+{
+  "id": "google-ai-studio",
+  "name": "Google AI Studio",
+  "tagline": "TODO: 一句英文点评（参考其他条的调性，有观点、不写广告语）",
+  "badge": "daily-refresh",
+  "category": ["llm", "image"],
+  "quota": "unknown",
+  "limits": "unknown",
+  "card_required": "unknown",
+  "expiry": "unknown",
+  "region": "Global",
+  "data_training": "unknown",
+  "path": "TODO: aistudio.google.com → sign in with Google → Create API key → copy key",
+  "code": "TODO: 最小可运行代码（优先 OpenAI 兼容格式；Gemini 用 google-genai 或 rest）",
+  "verdict": "TODO: 一句结论，值不值得用、硬伤是什么",
+  "best_for": ["TODO"],
+  "url": "https://aistudio.google.com",
+  "checked": "unknown",
+  "featured": 6,
+  "source": "",
+  "confidence": "unknown",
+  "_todo": [
+    "quota: 免费档实际开放的模型（2026-08 是 Gemini 3.x Flash 系列？）、RPM/RPD/TPM",
+    "card_required: 是否真的不用信用卡",
+    "data_training: 免费档数据是否用于改进 Google 产品（历史上是，确认现状）",
+    "expiry: 每日刷新还是额度制",
+    "checked: 填核实日期；source 填官方 rate-limits 页 URL",
+    "code: 补最小可运行代码"
+  ]
+}

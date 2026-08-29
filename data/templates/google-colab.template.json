@@ -1,0 +1,30 @@
+{
+  "id": "google-colab",
+  "name": "Google Colab",
+  "tagline": "TODO: 一句英文点评",
+  "badge": "daily-refresh",
+  "category": ["gpu"],
+  "quota": "unknown",
+  "limits": "unknown",
+  "card_required": "unknown",
+  "expiry": "unknown",
+  "region": "Global",
+  "data_training": "unknown",
+  "path": "TODO: colab.research.google.com → New notebook → Runtime → Change runtime type → T4 GPU",
+  "code": "import torch\nprint(torch.cuda.get_device_name(0))",
+  "verdict": "TODO: 一句结论",
+  "best_for": ["TODO"],
+  "url": "https://colab.research.google.com",
+  "checked": "unknown",
+  "featured": 24,
+  "source": "",
+  "confidence": "unknown",
+  "_todo": [
+    "quota: 免费档能拿到什么 GPU（T4？还是只有 CPU？2026 年免费 GPU 政策反复变过）",
+    "limits: 每日/每周使用上限、会话时长上限、闲置多久断连（历史上 12h 会话 / 90min 闲置）",
+    "card_required: 是否需绑卡",
+    "expiry: 使用额度是否按周/按日重置",
+    "checked: 填核实日期；source 填官方 FAQ 或 help 页 URL",
+    "best_for: 按核实的现状填"
+  ]
+}
