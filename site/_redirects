@@ -1,0 +1,3 @@
+# Cloudflare Pages 原生重定向：www → 根域名（避免 SEO 权重分散）
+# 格式：源 目标 状态码
+www.sneaktoken.com/*  https://sneaktoken.com/:splat  301
