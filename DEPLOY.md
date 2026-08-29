@@ -47,30 +47,41 @@ EdgeOne Pages 创建项目时有三个「加速区域」可选：
 
 ---
 
-## 方案 A：腾讯云 EdgeOne Pages（首选，已确认）
+## 方案 A：腾讯云 EdgeOne Pages + Git 自动部署（首选，已确认）
 
-腾讯云的边缘托管平台，对标 Cloudflare Pages。免费版长期有效，对你这个站足够：不限流量、不限请求数、每月 500 次构建、免费 SSL 证书、3200+ 全球节点。
+腾讯云的边缘托管平台，对标 Cloudflare Pages。免费版长期有效，对你这个站足够：不限流量、不限请求数、每月 500 次构建、免费 SSL 证书、3200+ 全球节点。**接 Git 后，改完代码 `git push` 就自动上线，不用再手动上传。**
 
-### 第一步：开通 + 建项目
+> 项目已经是 Git 仓库（分支 `main`，首个提交 `0af0db4`）。`site/` 是部署目录，所以 EdgeOne 的「输出目录」要填 `site`。
 
-1. 打开 [EdgeOne Pages 控制台](https://console.tencentcloud.com/edgeone)，一键开通免费版（若提示未开通先按引导开通）
-2. **创建项目**，构建配置选：
-   - 框架预设：`None` / 静态站点（不需要构建）
+### 第一步：把仓库推到 GitHub / GitLab
+
+EdgeOne Pages 的 Git 集成支持 GitHub 和 GitLab，二选一（没有就先注册一个，免费）：
+
+```bash
+# 1. 在 GitHub/GitLab 网页上新建一个空仓库（如 sneaktoken-site），不要勾 README
+# 2. 本地关联并推送（把下面 URL 换成你自己的仓库地址）
+git remote add origin https://github.com/你的账号/sneaktoken-site.git
+git push -u origin main
+```
+
+### 第二步：EdgeOne 连接 Git 自动部署
+
+1. 打开 [EdgeOne Pages 控制台](https://console.tencentcloud.com/edgeone)，一键开通免费版
+2. **创建项目** → 选 **「连接 Git」**（不是上传）→ 授权 GitHub/GitLab → 选中 `sneaktoken-site` 仓库
+3. 构建配置：
+   - 框架预设：`None`（纯静态，无构建步骤）
    - 构建命令：留空
-   - 输出目录：`/`（项目根）
-3. **加速区域：务必选「全球可用区（不含中国大陆）」** ← 免备案的关键
+   - **输出目录：`site`** ← 关键，仓库里网页文件都在 `site/` 下
+   - 生产分支：`main`
+4. **加速区域：务必选「全球可用区（不含中国大陆）」** ← 免备案的关键
+5. 点部署，几十秒后拿到 `xxx.edgeone.app` 预览域名，先确认站能打开、筛选和搜索正常
 
-### 第二步：上传代码（两种方式任选）
-
-- **方式 1（推荐，最快）**：项目 → 部署 → **上传静态文件**，把 `sneaktoken-site.zip`（仓库根目录已备好）拖进去。注意：因为站里所有路径是相对路径，**部署后需要把根目录设为 `/`**（EdgeOne 对单目录项目通常自动处理，若访问 404 就检查一下目录前缀）
-- **方式 2（长期维护更顺）**：把 `site/` 推到 GitHub 仓库，项目连接 Git 仓库 → 自动构建部署。以后改 `data/offers.js` 后 push 一下，网站自动更新
-
-部署完成后会拿到一个 `xxx.edgeone.app` 或类似的项目域名，先用它确认站能打开、筛选和搜索正常。
+> 以后日常更新：改完文件 → `git add -A && git commit -m "..." && git push` → EdgeOne 自动重新部署，一般 1 分钟内生效。
 
 ### 第三步：绑定 sneaktoken.com
 
 1. 项目 → **域名管理** → **添加自定义域名**，输入 `sneaktoken.com`（根域名）
-2. 控制台会显示需要添加的 **CNAME 目标**（形如 `xxx.pages.edgeone.cloud` 之类），记下来
+2. 控制台会显示需要添加的 **CNAME 目标**（形如 `xxx.pages.edgeone.cloud`），记下来
 3. 去腾讯云 **DNSPod 控制台** → `sneaktoken.com` → 添加记录：
 
    | 主机记录 | 记录类型 | 记录值 |
@@ -82,9 +93,9 @@ EdgeOne Pages 创建项目时有三个「加速区域」可选：
 4. 回 EdgeOne 点击**验证**。DNS 生效通常几分钟，最多 48 小时
 5. 验证通过后，在域名管理里开启 **HTTPS 强制跳转**，平台自动申请并部署免费 SSL 证书
 
-### 第四步（建议）：www → 根域名跳转
+### 第四步（建议）：统一入口
 
-在项目里加一个 `edgeone.json` 放到 `site/` 根目录并重新部署：
+至少保证 `www` 和根域名二选一，别两个都能独立访问（SEO 会分散权重）。在 `site/` 根目录放一个 `edgeone.json` 并提交即可：
 
 ```json
 {
@@ -95,7 +106,17 @@ EdgeOne Pages 创建项目时有三个「加速区域」可选：
 }
 ```
 
-> 如果只打算一个入口，可以跳过；但至少保证 www 和根域名二选一，别两个都能独立访问（SEO 会分散权重）。
+---
+
+## 备选：手动上传 zip（不接 Git 时用）
+
+项目 → 部署 → **上传静态文件**，把 `sneaktoken-site.zip`（仓库根目录已备好）拖进去。注意站里所有路径是相对路径，**输出目录要设为 `/`**（zip 内容已平铺在根）。每次更新都要重新打包上传：
+
+```bash
+# 重新生成部署包（排除 CF/Vercel 专用文件）
+python -c "import zipfile,os; z=zipfile.ZipFile('sneaktoken-site.zip','w',zipfile.ZIP_DEFLATED); [z.write(os.path.join(r,f), os.path.relpath(os.path.join(r,f),'site').replace(os.sep,'/')) for r,_,fs in os.walk('site') for f in fs if f not in ('_headers','vercel.json')]; z.close()"
+```
+
 
 ---
 
@@ -124,7 +145,7 @@ EdgeOne Pages 创建项目时有三个「加速区域」可选：
 
 ## 已知待办
 
-- 订阅表单（`index.html` 里 `#subForm`）需要接真实邮件服务
-- Footer 的 Privacy / Terms / Affiliate disclosure 三个链接目前是 `#` 占位，海外站这几页是合规必需，尤其有欧盟访客
+- 订阅表单（`index.html` 里 `#subForm`）目前只做前端校验，没接邮件服务；上线前若要真收邮箱，建议用 EdgeOne Cloud Functions 或第三方 Buttondown/Mailchimp
 - 统计建议用 EdgeOne 自带的分析（开通免费版自带指标分析），不用再挂第三方
-- **数据缺口**：Google AI Studio 和 Google Colab 尚未核实，模板在 `data/templates/`，补法见 `data/TBD.md`
+- **数据缺口**：Google AI Studio 和 Google Colab 尚未核实，模板在 `data/templates/`，补法见 `data/TBD.md`；补完复制成 `data/offers-google.json` 跑 `node tools/merge-offers.js` 即可上线
+- 上线后去 [Google Search Console](https://search.google.com/search-console) 提交 `sitemap.xml`，这是海外流量的主要来源
