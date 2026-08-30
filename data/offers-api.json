@@ -68,7 +68,7 @@
   {
     "id": "cohere",
     "name": "Cohere",
-    "tagline": "A trial key that is technically free forever but capped at 1,000 calls a month — useful for RAG plumbing, useless as a chat endpoint.",
+    "tagline": "A trial key that is free while Cohere issues one, but capped at 1,000 calls a month — useful for RAG plumbing, useless as a chat endpoint.",
     "badge": "no-card",
     "category": ["llm", "embedding"],
     "quota": "Trial keys are free but limited to 1,000 API calls per month across the Chat API. Other endpoints are not capped by that monthly number — only by their own per-minute rates — which makes Embedding and Rerank the real reason to hold a trial key.",

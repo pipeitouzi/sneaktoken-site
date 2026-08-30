@@ -6,7 +6,7 @@
    ============================================================ */
 window.CONTENT = {
 
-  contact: 'mailto:hello@sneaktoken.com',
+  contact: 'mailto:hello@pipeitouzi.com',
 
   /* ---------- "How to pick" cards ---------- */
   picks: [
@@ -56,7 +56,7 @@ window.CONTENT = {
       tag: 'No card',
       title: 'I don’t have a credit card',
       body: 'Plenty of developers can’t or won’t put a card on file — age, country, or principle. That rules out every “$5 in free credits” offer on this page, which is exactly why the card requirement is its own row on every entry.',
-      pick: 'Filter by “No card”. Groq, OpenRouter, Cloudflare Workers AI, Cohere, NVIDIA NIM and Kaggle all give you a working key without one.'
+      pick: 'Filter by "No card". Groq, OpenRouter, Cloudflare Workers AI, Cohere and Kaggle all give you a working key without one. (NVIDIA NIM’s card requirement isn’t published on its docs — its card shows "unknown".)'
     },
     {
       tag: 'Production',
@@ -84,7 +84,7 @@ window.CONTENT = {
     },
     {
       q: 'Do I need a credit card?',
-      a: 'It depends entirely on the provider, which is why there is a “Card” row on every entry. Groq, OpenRouter, Cloudflare Workers AI, Cohere, NVIDIA NIM and Kaggle all hand you a working key without one. Others advertise free credits but require a card on file to release them — Replicate and Cerebras both fall into that camp now.'
+      a: 'It depends entirely on the provider, which is why there is a "Card" row on every entry. Groq, OpenRouter, Cloudflare Workers AI, Cohere and Kaggle all hand you a working key without one. (NVIDIA NIM’s card requirement isn’t published on its docs, so its card shows "unknown".) Others advertise free credits but require a card on file to release them — Replicate and Cerebras both fall into that camp now.'
     },
     {
       q: 'Why is a provider I expected not listed?',
@@ -108,7 +108,7 @@ window.CONTENT = {
     },
     {
       q: 'Do you earn money from these links?',
-      a: 'Some links may carry referral codes where a provider offers them. It does not change ranking or inclusion — entries are ordered by usefulness, not by payout. Nothing here is pay-to-list, and if a provider kills its free tier it comes off the list regardless.'
+      a: 'No. SneakToken is free and we earn nothing from it — no affiliate codes, no referral fees, no paid placements. Every listing is verified independently and ordered by usefulness. If a provider ends its free tier it comes off the list regardless. Outbound links are plain nofollow links straight to each provider’s own sign-up page.'
     },
     {
       q: 'Can I suggest a provider that’s missing?',
