@@ -15,10 +15,10 @@
     "code": "from openai import OpenAI\n\nclient = OpenAI(\n    api_key=\"gsk_xxx\",\n    base_url=\"https://api.groq.com/openai/v1\",\n)\n\nr = client.chat.completions.create(\n    model=\"openai/gpt-oss-120b\",\n    messages=[{\"role\": \"user\", \"content\": \"hi\"}],\n)\nprint(r.choices[0].message.content)",
     "verdict": "Still the best default free tier for a solo dev: no card, no expiry, fast inference, and an OpenAI-compatible endpoint you can swap in with one line. Two real caveats — Groq does not cleanly publish the Free plan's own numbers (the docs table may be showing Developer-plan values, so verify on your Limits page), and limits are organization-level, so you cannot multiply them with extra keys.",
     "best_for": ["Prototyping on an OpenAI-compatible endpoint", "Low-latency chat and agents", "Free Whisper transcription (2K requests/day)"],
-    "url": "https://console.groq.com/keys",
+    "url": "https://groq.com",
     "checked": "2026-08-29",
     "featured": 1,
-    "source": "https://console.groq.com/docs/rate-limits",
+    "source": "https://groq.com",
     "confidence": "official"
   },
   {

@@ -6,3 +6,5 @@ __pycache__/
 
 # 本地预览日志
 /serve.log
+
+.workbuddy/

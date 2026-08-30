@@ -28,10 +28,10 @@ window.OFFERS = [
       "Low-latency chat and agents",
       "Free Whisper transcription (2K requests/day)"
     ],
-    "url": "https://console.groq.com/keys",
+    "url": "https://groq.com",
     "checked": "2026-08-29",
     "featured": 1,
-    "source": "https://console.groq.com/docs/rate-limits",
+    "source": "https://groq.com",
     "confidence": "official"
   },
   {
