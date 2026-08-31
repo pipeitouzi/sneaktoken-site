@@ -6,7 +6,11 @@
    ============================================================ */
 window.CONTENT = {
 
-  contact: 'mailto:hello@pipeitouzi.com',
+  contact: 'mailto:pipeitouzi@gmail.com',
+
+  /* 可见的纠错/联系入口，让读者在任何问题下都能联系到你 */
+  contactLabel: 'Found a broken link or a tier that changed? Email me at',
+  contactEmail: 'pipeitouzi@gmail.com',
 
   /* ---------- "How to pick" cards ---------- */
   picks: [

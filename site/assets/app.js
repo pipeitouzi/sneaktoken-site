@@ -391,6 +391,20 @@
 
     var contact = $('#ftrContact');
     if (contact && CONTENT.contact) contact.setAttribute('href', CONTENT.contact);
+
+    /* 页脚可见联系入口：让读者随时能反馈问题 */
+    if (CONTENT.contactEmail) {
+      var ce = document.getElementById('ftrContactEmail');
+      if (ce) {
+        ce.textContent = CONTENT.contactEmail;
+        ce.setAttribute('href', 'mailto:' + CONTENT.contactEmail);
+      }
+      var cn = document.getElementById('ftrContactNote');
+      if (cn && CONTENT.contactLabel) {
+        cn.innerHTML = CONTENT.contactLabel + ' <a id="ftrContactEmail" href="mailto:' +
+          CONTENT.contactEmail + '">' + CONTENT.contactEmail + '</a>.';
+      }
+    }
   }
 
   /* ---------- header shadow ---------- */
