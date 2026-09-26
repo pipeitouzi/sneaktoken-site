@@ -1,425 +1,628 @@
-/* ============================================================
-   sneaktoken.com — directory rendering + filtering
-   ============================================================ */
+/* SneakToken — interaction layer
+   Reads window.MODELS (data/models.js) and window.SITE (data/site.js).
+   No tracking, no external calls, no keys. Everything below runs in the browser. */
 (function () {
-  'use strict';
+  "use strict";
 
-  var OFFERS = (window.OFFERS || []);
-  var CONTENT = window.CONTENT || {};
-  var $ = function (s, r) { return (r || document).querySelector(s); };
-  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var M = window.MODELS || { meta: {}, models: [] };
+  var S = window.SITE || {};
+  var ALL = M.models || [];
 
-  /* ---------- helpers ---------- */
+  /* ---------------- helpers ---------------- */
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
   function esc(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
   }
-  function initials(name) {
-    var parts = String(name).replace(/[^A-Za-z0-9 &]/g, ' ').trim().split(/\s+/);
-    if (!parts.length) return '?';
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return (parts[0][0] + parts[1][0]).toUpperCase();
+  function money(n) {
+    if (n === null || n === undefined || isNaN(n)) return "unknown";
+    if (n >= 1) return "$" + n.toFixed(2);
+    return "$" + String(parseFloat(n.toFixed(4)));
   }
-  function hueOf(name) {
-    var h = 0, i;
-    for (i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
-    return h;
-  }
-  function fmtDate(iso) {
-    if (!iso || iso === 'unknown') return 'unknown';
-    var d = new Date(iso);
-    if (isNaN(d)) return iso;
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  }
-  function isUnknown(v) {
-    return v == null || String(v).toLowerCase() === 'unknown' || String(v).trim() === '';
-  }
-  function renderVal(v) {
-    if (isUnknown(v)) return '<span class="unknown">unknown</span>';
-    return esc(v);
-  }
-  function arr(v) {
-    if (Array.isArray(v)) return v;
-    if (typeof v === 'string' && v.trim()) return v.split(',').map(function (x) { return x.trim(); });
-    return [];
+  function num(n, d) {
+    if (n === null || n === undefined || isNaN(n)) return "unknown";
+    return Number(n).toLocaleString("en-US", { maximumFractionDigits: d === undefined ? 0 : d });
   }
 
-  var BADGE_META = {
-    'nocard':       { cls: 'badge-nocard',    label: 'No card' },
-    'no-card':      { cls: 'badge-nocard',    label: 'No card' },
-    'noexpiry':     { cls: 'badge-noexpiry',  label: 'No expiry' },
-    'no-expiry':    { cls: 'badge-noexpiry',  label: 'No expiry' },
-    'daily':        { cls: 'badge-daily',     label: 'Daily reset' },
-    'daily-refresh':{ cls: 'badge-daily',     label: 'Daily reset' },
-    'onetime':      { cls: 'badge-onetime',   label: 'One-time' },
-    'one-time':     { cls: 'badge-onetime',   label: 'One-time' }
-  };
-  var CAT_LABEL = {
-    'llm': 'LLM API', 'gpu': 'GPU compute', 'embedding': 'Embedding & rerank',
-    'speech': 'Speech', 'image': 'Image', 'agent': 'Agent', 'hosting': 'Hosting'
-  };
-
-  function badgeMeta(b) {
-    return BADGE_META[String(b || '').toLowerCase()] || { cls: 'badge-none', label: esc(b || '—') };
+  /* The price a buyer actually pays: first-party if published, otherwise the
+     cheapest published third-party host rate. Never invented. */
+  function effPrice(m) {
+    if (m.price && m.price.in !== null) {
+      return { in: m.price.in, cached_in: m.price.cached_in, out: m.price.out, via: m.vendor, status: m.price.status };
+    }
+    var hosts = (m.hosts || []).filter(function (h) { return h.in !== null; });
+    if (hosts.length) {
+      var h = hosts.slice().sort(function (a, b) { return (a.out || 0) - (b.out || 0); })[0];
+      return { in: h.in, cached_in: h.cached_in, out: h.out, via: h.provider, status: "host" };
+    }
+    return { in: null, cached_in: null, out: null, via: null, status: "unknown" };
   }
-  function catLabel(c) { return CAT_LABEL[String(c).toLowerCase()] || c; }
 
-  /* ---------- normalise ---------- */
-  var items = OFFERS.map(function (o, i) {
-    var cats = arr(o.category).map(function (c) { return String(c).toLowerCase(); });
-    return {
-      idx: i,
-      id: o.id || 'offer-' + i,
-      name: o.name || 'Untitled',
-      tagline: o.tagline || '',
-      badge: String(o.badge || '').toLowerCase(),
-      cats: cats,
-      catText: cats.map(catLabel).join(' · ') || '—',
-      quota: o.quota,
-      limits: o.limits,
-      card_required: o.card_required,
-      expiry: o.expiry,
-      region: o.region || 'Global',
-      region_notes: o.region_notes,
-      data_training: o.data_training,
-      path: o.path,
-      code: o.code,
-      code_lang: o.code_lang || 'python',
-      verdict: o.verdict,
-      best_for: arr(o.best_for),
-      url: o.url || '#',
-      checked: o.checked,
-      source: o.source || '',
-      confidence: o.confidence || 'unknown',
-      notes: o.notes || '',
-      featured: o.featured == null ? 999 : o.featured,
-      hay: [o.name, o.tagline, o.quota, o.verdict, o.region, arr(o.best_for).join(' '),
-            cats.join(' '), o.id, o.notes].join(' ').toLowerCase()
-    };
+  function vendors() {
+    var v = {};
+    ALL.forEach(function (m) { v[m.vendor] = 1; });
+    return Object.keys(v).sort();
+  }
+  function allTags() {
+    var t = {};
+    ALL.forEach(function (m) { (m.tags || []).forEach(function (x) { t[x] = 1; }); });
+    return Object.keys(t).sort();
+  }
+
+  /* ---------------- global chrome ---------------- */
+  var y = new Date().getFullYear();
+  $$("#year").forEach(function (e) { e.textContent = y; });
+
+  var path = location.pathname.split("/").pop() || "index.html";
+  $$(".nav a").forEach(function (a) {
+    var href = a.getAttribute("href").split("/").pop();
+    if (href === path) a.classList.add("on");
   });
 
-  /* ---------- filters ---------- */
-  var state = { q: '', category: new Set(), badge: new Set(), region: new Set(), sort: 'featured' };
+  var tgl = $(".nav-toggle");
+  if (tgl) tgl.addEventListener("click", function () { $(".nav").classList.toggle("open"); });
 
-  function buildChips() {
-    var groups = {
-      category: {},
-      badge: {},
-      region: {}
-    };
-    items.forEach(function (it) {
-      (it.cats.length ? it.cats : []).forEach(function (c) {
-        groups.category[c] = (groups.category[c] || 0) + 1;
-      });
-      if (it.badge) groups.badge[it.badge] = (groups.badge[it.badge] || 0) + 1;
-      (arr(it.region).length ? arr(it.region) : [it.region]).forEach(function (r) {
-        groups.region[r] = (groups.region[r] || 0) + 1;
-      });
-    });
+  $$("[data-count]").forEach(function (e) {
+    var k = e.getAttribute("data-count");
+    if (k === "models") e.textContent = ALL.length;
+    if (k === "verified") e.textContent = ALL.filter(function (m) { return m.price && m.price.status === "verified"; }).length;
+    if (k === "priced") e.textContent = ALL.filter(function (m) { return effPrice(m).out !== null; }).length;
+    if (k === "open") e.textContent = ALL.filter(function (m) { return m.weights === "open"; }).length;
+    if (k === "asof") e.textContent = M.meta.asof;
+  });
 
-    Object.keys(groups).forEach(function (g) {
-      var host = $('.chips[data-group="' + g + '"]');
-      if (!host) return;
-      var entries = Object.keys(groups[g]).sort(function (a, b) {
-        if (g === 'badge') return Object.keys(BADGE_META).indexOf(a) - Object.keys(BADGE_META).indexOf(b);
-        return groups[g][b] - groups[g][a];
-      });
-      host.innerHTML = entries.map(function (k) {
-        var label = g === 'category' ? catLabel(k)
-                  : g === 'badge' ? badgeMeta(k).label
-                  : esc(k);
-        return '<button type="button" class="chip" data-group="' + g + '" data-val="' + esc(k) +
-               '" aria-pressed="false">' + label + '<span class="n">' + groups[g][k] + '</span></button>';
-      }).join('');
-    });
+  /* ---------------- model rows ---------------- */
+  function rowHTML(m) {
+    var p = effPrice(m);
+    var open = m.weights === "open";
+    var tags = (m.tags || []).slice(0, 4).map(function (t) {
+      return '<span class="tag' + (t === "open-weights" ? " ok" : t === "eu" ? " violet" : t === "long-context" ? " info" : "") + '">' + esc(t) + "</span>";
+    }).join("");
+    var hs = (m.hosts || []).map(function (h) {
+      return "<dt>" + esc(h.provider) + "</dt><dd>" + money(h.in) + " in / " + money(h.out) + " out" +
+        (h.cached_in !== null ? " / " + money(h.cached_in) + " cached" : "") + "</dd>";
+    }).join("");
+
+    return '<article class="mrow" id="m-' + esc(m.id) + '" data-id="' + esc(m.id) + '">' +
+      '<div class="mrow-top">' +
+        '<span class="mrow-name">' + esc(m.name) + "</span>" +
+        '<span class="mrow-vendor">' + esc(m.vendor) + "</span>" +
+        '<span class="mrow-price">' +
+          "<span>in <b>" + money(p.in) + "</b></span>" +
+          "<span>cached <b>" + money(p.cached_in) + "</b></span>" +
+          "<span>out <b>" + money(p.out) + "</b></span>" +
+        "</span>" +
+      "</div>" +
+      '<div class="mrow-meta">' +
+        '<span class="tag ' + (open ? "ok" : "") + '">' + (open ? "open weights" : "closed") + "</span>" +
+        '<span class="tag">' + esc(m.context || "context n/a") + "</span>" +
+        (m.license ? '<span class="tag">' + esc(m.license) + "</span>" : "") +
+        tags +
+      "</div>" +
+      '<p class="mrow-note">' + esc(m.best_for) + "</p>" +
+      '<div class="mrow-foot">' +
+        '<button class="disclose" type="button" data-toggle="' + esc(m.id) + '">Details &amp; sources</button>' +
+        (p.via && p.status === "host" ? "<span>priced via " + esc(p.via) + " (hosted)</span>" : "") +
+        (m.price && m.price.status === "unverified" ? '<span class="tag warn">price unverified</span>' : "") +
+      "</div>" +
+      '<div class="details" id="d-' + esc(m.id) + '">' +
+        "<dl>" +
+          "<dt>Model ID</dt><dd class=\"mono\">" + esc(m.model_id) + "</dd>" +
+          "<dt>Context</dt><dd>" + esc(m.context || "not published") + (m.context_note ? " — " + esc(m.context_note) : "") + "</dd>" +
+          "<dt>Modalities</dt><dd>" + esc((m.modalities || []).join(", ")) + "</dd>" +
+          "<dt>Tool calling</dt><dd>" + (m.tools ? "yes" : "not confirmed") + "</dd>" +
+          (m.params_b ? "<dt>Parameters</dt><dd>" + num(m.params_b) + "B" + (m.params_active_b ? " total / " + num(m.params_active_b) + "B active" : "") + "</dd>" : "") +
+          "<dt>Self-host</dt><dd>" + (m.self_host && m.self_host.feasible ? esc(m.self_host.note) : "not possible / not offered") + "</dd>" +
+          "<dt>Regions</dt><dd>" + esc((m.residency && m.residency.note) || "not verified") + "</dd>" +
+          (m.price && m.price.batch ? "<dt>Batch</dt><dd>" + money(m.price.batch.in) + " in / " + money(m.price.batch.out) + " out</dd>" : "") +
+          (m.price && m.price.long_ctx ? "<dt>Long context</dt><dd>" + esc(m.price.long_ctx) + "</dd>" : "") +
+          (m.price && m.price.notes ? "<dt>Fine print</dt><dd>" + esc(m.price.notes) + "</dd>" : "") +
+          hs +
+        "</dl>" +
+        '<p style="margin-top:12px;font-size:12.5px">Checked ' + esc((m.price && m.price.verified) || "—") +
+        (m.price && m.price.source_url ? ' · <a href="' + esc(m.price.source_url) + '" target="_blank" rel="nofollow noopener">' + esc((m.price && m.price.source_label) || "source") + "</a>" : "") +
+        " · <a href=\"" + esc(m.vendor_url) + "\" target=\"_blank\" rel=\"nofollow noopener\">provider</a></p>" +
+      "</div>" +
+    "</article>";
   }
 
-  function visible() {
-    var out = items.filter(function (it) {
-      if (state.q && it.hay.indexOf(state.q) === -1) return false;
-      if (state.category.size) {
-        var hit = false;
-        it.cats.forEach(function (c) { if (state.category.has(c)) hit = true; });
-        if (!hit) return false;
-      }
-      if (state.badge.size && !state.badge.has(it.badge)) return false;
-      if (state.region.size) {
-        var rs = arr(it.region).length ? arr(it.region) : [it.region];
-        var rh = false;
-        rs.forEach(function (r) { if (state.region.has(r)) rh = true; });
-        if (!rh) return false;
+  function initLibrary() {
+    var box = $("#mList");
+    if (!box) return;
+    var state = { q: "", weights: "all", vendor: "all", tag: "all", sort: "out" };
+
+    function buildFilters() {
+      var wc = $("#fWeights"), vc = $("#fVendors"), tc = $("#fTags");
+      if (wc) wc.innerHTML = ["all", "open", "closed"].map(function (v) {
+        return '<button class="chip' + (v === state.weights ? " on" : "") + '" data-f="weights" data-v="' + v + '">' + (v === "all" ? "Any licence" : v === "open" ? "Open weights" : "Closed") + "</button>";
+      }).join("");
+      if (vc) vc.innerHTML = ['<button class="chip' + (state.vendor === "all" ? " on" : "") + '" data-f="vendor" data-v="all">Any vendor</button>']
+        .concat(vendors().map(function (v) {
+          return '<button class="chip' + (state.vendor === v ? " on" : "") + '" data-f="vendor" data-v="' + esc(v) + '">' + esc(v) + "</button>";
+        })).join("");
+      if (tc) tc.innerHTML = ['<button class="chip' + (state.tag === "all" ? " on" : "") + '" data-f="tag" data-v="all">Any strength</button>']
+        .concat(allTags().map(function (t) {
+          return '<button class="chip' + (state.tag === t ? " on" : "") + '" data-f="tag" data-v="' + esc(t) + '">' + esc(t) + "</button>";
+        })).join("");
+    }
+
+    function matches(m) {
+      if (state.weights !== "all" && m.weights !== state.weights) return false;
+      if (state.vendor !== "all" && m.vendor !== state.vendor) return false;
+      if (state.tag !== "all" && (m.tags || []).indexOf(state.tag) < 0) return false;
+      if (state.q) {
+        var hay = [m.name, m.model_id, m.vendor, m.best_for, (m.tags || []).join(" "), m.license || ""].join(" ").toLowerCase();
+        if (hay.indexOf(state.q.toLowerCase()) < 0) return false;
       }
       return true;
-    });
+    }
 
-    if (state.sort === 'name') {
-      out.sort(function (a, b) { return a.name.localeCompare(b.name); });
-    } else if (state.sort === 'nocard') {
-      out.sort(function (a, b) {
-        var an = /yes|true|required/i.test(String(a.card_required)) ? 1 : 0;
-        var bn = /yes|true|required/i.test(String(b.card_required)) ? 1 : 0;
-        return an - bn || a.featured - b.featured;
+    function sortList(list) {
+      var s = state.sort;
+      return list.slice().sort(function (a, b) {
+        var pa = effPrice(a), pb = effPrice(b);
+        function v(p) { return p.out === null ? Infinity : p.out; }
+        if (s === "out") return v(pa) - v(pb);
+        if (s === "in") return (pa.in === null ? Infinity : pa.in) - (pb.in === null ? Infinity : pb.in);
+        if (s === "context") {
+          var ca = parseInt(String(a.context || "0").replace(/[^0-9]/g, ""), 10) || 0;
+          var cb = parseInt(String(b.context || "0").replace(/[^0-9]/g, ""), 10) || 0;
+          return cb - ca;
+        }
+        return a.name.localeCompare(b.name);
       });
-    } else {
-      out.sort(function (a, b) { return a.featured - b.featured || a.name.localeCompare(b.name); });
     }
-    return out;
+
+    function render() {
+      var list = sortList(ALL.filter(matches));
+      box.innerHTML = list.length ? list.map(rowHTML).join("") :
+        '<div class="empty"><p class="empty-h">Nothing matches.</p><p>Loosen a filter, or <button class="linklike" id="mReset" type="button">clear them all</button>.</p></div>';
+      var c = $("#mCount");
+      if (c) c.textContent = list.length + " of " + ALL.length + " models";
+      var r = $("#mReset");
+      if (r) r.addEventListener("click", function () {
+        state.q = ""; state.weights = "all"; state.vendor = "all"; state.tag = "all";
+        var i = $("#mSearch"); if (i) i.value = "";
+        buildFilters(); render();
+      });
+      $$("[data-toggle]", box).forEach(function (b) {
+        b.addEventListener("click", function () {
+          var d = document.getElementById("d-" + b.getAttribute("data-toggle"));
+          if (d) { d.classList.toggle("open"); b.textContent = d.classList.contains("open") ? "Hide details" : "Details & sources"; }
+        });
+      });
+    }
+
+    buildFilters();
+    $$(".chip").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (!b.getAttribute("data-f")) return;
+        state[b.getAttribute("data-f")] = b.getAttribute("data-v");
+        buildFilters(); render();
+      });
+    });
+    var q = $("#mSearch");
+    if (q) q.addEventListener("input", function () { state.q = q.value.trim(); render(); });
+    var s = $("#mSort");
+    if (s) s.addEventListener("change", function () { state.sort = s.value; render(); });
+    render();
   }
 
-  /* ---------- card ---------- */
-  function cardHTML(it) {
-    var bm = badgeMeta(it.badge);
-    var hue = hueOf(it.name);
-    var specs = '';
+  /* ---------------- comparison table ---------------- */
+  function initCompare() {
+    var tb = $("#cmpBody");
+    if (!tb) return;
+    var rows = ALL.slice().sort(function (a, b) {
+      var pa = effPrice(a).out, pb = effPrice(b).out;
+      return (pa === null ? Infinity : pa) - (pb === null ? Infinity : pb);
+    });
+    tb.innerHTML = rows.map(function (m) {
+      var p = effPrice(m);
+      return "<tr>" +
+        '<td><span class="name-cell">' + esc(m.name) + '</span><span class="sub">' + esc(m.vendor) + "</span></td>" +
+        '<td class="num">' + money(p.in) + "</td>" +
+        '<td class="num">' + money(p.cached_in) + "</td>" +
+        '<td class="num">' + money(p.out) + "</td>" +
+        "<td>" + esc(m.context || "—") + "</td>" +
+        "<td>" + (m.weights === "open" ? '<span class="tag ok">open</span>' : '<span class="tag">closed</span>') + "</td>" +
+        '<td class="muted">' + esc(m.best_for) + "</td>" +
+        "</tr>";
+    }).join("");
+  }
 
-    specs += '<div class="spec"><div class="spec-k">Quota</div><div class="spec-v">' + renderVal(it.quota) + '</div></div>';
-    specs += '<div class="spec"><div class="spec-k">Limits</div><div class="spec-v">' + renderVal(it.limits) + '</div></div>';
+  /* ---------------- pick wizard ---------------- */
+  function initPick() {
+    var w = $("#wizard");
+    if (!w) return;
+    var P = S.pick || {};
+    var sel = { use: null, constraint: "any", volume: "small" };
+    var out = $("#pickOut");
 
-    var regionTxt = renderVal(it.region);
-    if (!isUnknown(it.region_notes)) {
-      regionTxt += ' <span class="flag">' + esc(it.region_notes) + '</span>';
+    function opts(list, key) {
+      return (list || []).map(function (o) {
+        return '<button class="opt" data-k="' + key + '" data-v="' + esc(o.id) + '"><b>' + esc(o.label) + "</b><span>" + esc(o.hint) + "</span></button>";
+      }).join("");
     }
-    specs += '<div class="spec"><div class="spec-k">Region</div><div class="spec-v">' + regionTxt + '</div></div>';
+    w.innerHTML =
+      '<div class="step"><div class="step-q">01 — WHAT ARE YOU BUILDING</div><div class="opts" data-g="use">' + opts(P.useCases, "use") + "</div></div>" +
+      '<div class="step"><div class="step-q">02 — WHAT IS NON-NEGOTIABLE</div><div class="opts" data-g="constraint">' + opts(P.constraints, "constraint") + "</div></div>" +
+      '<div class="step"><div class="step-q">03 — HOW MUCH ARE YOU SPENDING</div><div class="opts" data-g="volume">' + opts(P.volumes, "volume") + "</div></div>";
 
-    var cardTxt = /^no$/i.test(String(it.card_required).trim()) ? '<strong>No card</strong>'
-                : /^yes$/i.test(String(it.card_required).trim()) ? '<strong>Yes</strong>'
-                : renderVal(it.card_required);
-    specs += '<div class="spec"><div class="spec-k">Card</div><div class="spec-v">' + cardTxt + '</div></div>';
-
-    if (!isUnknown(it.expiry)) {
-      specs += '<div class="spec"><div class="spec-k">Expires</div><div class="spec-v">' + renderVal(it.expiry) + '</div></div>';
-    }
-    if (!isUnknown(it.data_training)) {
-      specs += '<div class="spec"><div class="spec-k">Data</div><div class="spec-v">' + renderVal(it.data_training) + '</div></div>';
+    function volumeMix() {
+      if (sel.volume === "tiny") return [8, 2];
+      if (sel.volume === "mid") return [600, 150];
+      if (sel.volume === "big") return [6000, 1500];
+      return [60, 15];
     }
 
-    var code = '';
-    if (!isUnknown(it.path) || !isUnknown(it.code)) {
-      code = '<div class="card-code"><div class="code-hd">Quickstart</div>';
-      if (!isUnknown(it.path)) code += '<div class="code-path">' + esc(it.path) + '</div>';
-      if (!isUnknown(it.code)) {
-        code += '<pre class="code"><code>' + esc(it.code) + '</code></pre>';
+    function score(m) {
+      var p = effPrice(m);
+      var s = 0, why = [];
+      var t = m.tags || [];
+      if (sel.use === "coding") {
+        if (t.indexOf("coding") >= 0) { s += 30; why.push("tagged for coding"); }
+        if (m.tools) { s += 8; why.push("tool calling"); }
+      } else if (sel.use === "bulk") {
+        if (p.out !== null && p.out <= 1.5) { s += 30; why.push("output at " + money(p.out) + "/M"); }
+        if (t.indexOf("bulk") >= 0) s += 12;
+        if (p.cached_in !== null && p.in !== null && p.cached_in < p.in / 5) { s += 8; why.push("cached input " + money(p.cached_in)); }
+      } else if (sel.use === "longdoc") {
+        var ctx = parseInt(String(m.context || "0").replace(/[^0-9]/g, ""), 10) || 0;
+        if (ctx >= 1000000) { s += 28; why.push("1M context"); }
+        else if (ctx >= 200000) s += 14;
+        if (p.cached_in !== null && p.cached_in <= 0.1) { s += 10; why.push("cheap re-reads"); }
+      } else if (sel.use === "chat") {
+        if (p.out !== null && p.out <= 6) { s += 18; why.push("output " + money(p.out) + "/M"); }
+        if (t.indexOf("balanced") >= 0) s += 12;
+      } else if (sel.use === "multimodal") {
+        if ((m.modalities || []).length > 1) { s += 30; why.push((m.modalities || []).join(" + ") + " input"); }
+      } else if (sel.use === "agents") {
+        if (t.indexOf("agents") >= 0) s += 24;
+        if (t.indexOf("frontier") >= 0) s += 10;
+        if (m.tools) s += 8;
+        if (m.weights === "open") s += 4;
       }
-      code += '</div>';
+      if (sel.constraint === "open" && m.weights === "open") { s += 22; why.push("open weights"); }
+      if (sel.constraint === "eu") {
+        if (m.residency && m.residency.eu) { s += 22; why.push("EU region"); }
+        if (m.eu_vendor) { s += 16; why.push("EU-based vendor"); }
+      }
+      if (sel.constraint === "cheap" && p.out !== null) { s += Math.max(0, 26 - p.out * 3); }
+      if (sel.constraint === "frontier" && t.indexOf("frontier") >= 0) { s += 22; why.push("frontier tier"); }
+      if (sel.volume === "tiny" && p.out !== null) s += Math.max(0, 14 - p.out * 1.2);
+      if (sel.volume === "big" && m.weights === "open" && m.self_host && m.self_host.feasible) { s += 14; why.push("worth modelling self-host at this volume"); }
+      if (p.out === null) s -= 40;
+      if (m.price && m.price.status === "unverified") s -= 12;
+      return { s: s, why: why };
     }
 
-    var verdict = !isUnknown(it.verdict)
-      ? '<p class="card-verdict"><b>Verdict.</b> ' + esc(it.verdict) + '</p>' : '';
-
-    var best = it.best_for.length
-      ? '<div class="card-best">' + it.best_for.map(function (b) {
-          return '<span class="tag">' + esc(b) + '</span>'; }).join('') + '</div>' : '';
-
-    return '' +
-      '<article class="card" id="' + esc(it.id) + '">' +
-        '<div class="card-hd">' +
-          '<div class="card-top">' +
-            '<div class="card-logo" style="background:hsl(' + hue + ',52%,34%)">' + esc(initials(it.name)) + '</div>' +
-            '<div class="card-name"><h3>' + esc(it.name) + '</h3>' +
-              '<div class="card-cat">' + esc(it.catText) + '</div></div>' +
-            '<span class="badge ' + bm.cls + '">' + bm.label + '</span>' +
-          '</div>' +
-          (it.tagline ? '<p class="card-tagline">' + esc(it.tagline) + '</p>' : '') +
-        '</div>' +
-        '<div class="card-specs">' + specs + '</div>' +
-        code + verdict + best +
-        '<div class="card-ft">' +
-          '<a class="btn-go" href="' + esc(it.url) + '" target="_blank" rel="noopener noreferrer nofollow">Get credits →</a>' +
-          (it.source
-            ? '<a class="card-date card-src" href="' + esc(it.source) + '" target="_blank" rel="noopener" ' +
-              'title="Verified against the official page — click to open it">✓ ' + fmtDate(it.checked) + '</a>'
-            : '<span class="card-date" title="Last verified">✓ ' + fmtDate(it.checked) + '</span>') +
-        '</div>' +
-      '</article>';
-  }
-
-  /* ---------- compare table ---------- */
-  function tableHTML(list) {
-    var rows = list.map(function (it) {
-      var card = /^no$/i.test(String(it.card_required).trim())
-        ? '<span class="yes">No</span>'
-        : /^yes$/i.test(String(it.card_required).trim())
-          ? '<span class="no">Yes</span>' : renderVal(it.card_required);
-      return '<tr>' +
-        '<td>' + esc(it.name) + '</td>' +
-        '<td>' + renderVal(it.quota) + '</td>' +
-        '<td>' + renderVal(it.limits) + '</td>' +
-        '<td>' + card + '</td>' +
-        '<td>' + renderVal(it.expiry) + '</td>' +
-        '<td>' + (it.best_for.length ? esc(it.best_for.slice(0, 2).join(', ')) : '—') + '</td>' +
-      '</tr>';
-    }).join('');
-    $('#cmp tbody').innerHTML = rows || '<tr><td colspan="6">No entries yet.</td></tr>';
-  }
-
-  /* ---------- pick + faq ---------- */
-  function renderPick() {
-    var host = $('#pickGrid');
-    if (!host || !CONTENT.picks) return;
-    host.innerHTML = CONTENT.picks.map(function (p) {
-      return '<div class="pick">' +
-        '<span class="pick-tag">' + esc(p.tag || 'Tip') + '</span>' +
-        '<h3>' + esc(p.title) + '</h3>' +
-        '<p>' + esc(p.body) + '</p>' +
-        '<div class="pick-rec"><b>Start with:</b> ' + esc(p.pick) + '</div>' +
-      '</div>';
-    }).join('');
-  }
-
-  function renderFaq() {
-    var host = $('#faqList');
-    if (!host || !CONTENT.faq) return;
-    host.innerHTML = CONTENT.faq.map(function (f, i) {
-      return '<div class="faq-i" data-open="false">' +
-        '<button class="faq-q" type="button" aria-expanded="false" aria-controls="fa-' + i + '" id="fq-' + i + '">' +
-          '<span>' + esc(f.q) + '</span><span class="faq-ico" aria-hidden="true"></span>' +
-        '</button>' +
-        '<div class="faq-a" id="fa-' + i + '" role="region" aria-labelledby="fq-' + i + '">' +
-          '<div><p>' + esc(f.a) + '</p></div>' +
-        '</div></div>';
-    }).join('');
-
-    host.addEventListener('click', function (e) {
-      var btn = e.target.closest('.faq-q');
-      if (!btn) return;
-      var item = btn.parentElement;
-      var open = item.getAttribute('data-open') === 'true';
-      item.setAttribute('data-open', open ? 'false' : 'true');
-      btn.setAttribute('aria-expanded', open ? 'false' : 'true');
-    });
-  }
-
-  /* ---------- meta ---------- */
-  function renderMeta() {
-    var dates = items.map(function (i) { return i.checked; }).filter(Boolean).sort();
-    var latest = dates.length ? dates[dates.length - 1] : '';
-    var fmt = latest ? fmtDate(latest) : '—';
-    ['#heroDate', '#ftrDate'].forEach(function (s) {
-      var el = $(s); if (el) { el.textContent = fmt; el.setAttribute('datetime', latest || ''); }
-    });
-
-    var nocard = items.filter(function (i) { return /^no$/i.test(String(i.card_required).trim()); }).length;
-    var gpu = items.filter(function (i) { return i.cats.indexOf('gpu') > -1; }).length;
-    var forever = items.filter(function (i) { return i.badge === 'noexpiry' || i.badge === 'no-expiry'; }).length;
-
-    var set = function (k, v) {
-      var el = document.querySelector('[data-stat="' + k + '"]'); if (el) el.textContent = v;
-    };
-    set('total', items.length); set('nocard', nocard); set('gpu', gpu); set('forever', forever);
-    var hc = $('#heroCount'); if (hc) hc.textContent = items.length;
-    var yr = $('#year'); if (yr) yr.textContent = new Date().getFullYear();
-  }
-
-  /* ---------- paint ---------- */
-  function paint() {
-    var list = visible();
-    $('#grid').innerHTML = list.map(cardHTML).join('');
-    $('#empty').hidden = list.length > 0;
-
-    var bits = [];
-    if (state.category.size) bits.push([].concat(Array.from(state.category)).map(catLabel).join(' + '));
-    if (state.badge.size) bits.push(Array.from(state.badge).map(function (b) { return badgeMeta(b).label; }).join(' + '));
-    if (state.region.size) bits.push(Array.from(state.region).join(' + '));
-    if (state.q) bits.push('“' + state.q + '”');
-
-    $('#resultLine').textContent = list.length === items.length
-      ? 'Showing all ' + items.length + ' offers.'
-      : 'Showing ' + list.length + ' of ' + items.length + ' offers' + (bits.length ? ' · ' + bits.join(' · ') : '');
-
-    var active = state.category.size || state.badge.size || state.region.size || state.q;
-    $('#reset').hidden = !active;
-
-    $$('.chip').forEach(function (c) {
-      var g = c.dataset.group, v = c.dataset.val;
-      c.setAttribute('aria-pressed', state[g].has(v) ? 'true' : 'false');
-    });
-
-    tableHTML(list);
-  }
-
-  /* ---------- events ---------- */
-  function bind() {
-    $('#filters').addEventListener('click', function (e) {
-      var chip = e.target.closest('.chip');
-      if (!chip) return;
-      var g = chip.dataset.group, v = chip.dataset.val;
-      if (state[g].has(v)) state[g].delete(v); else state[g].add(v);
-      paint();
-    });
-
-    var qt;
-    $('#q').addEventListener('input', function (e) {
-      clearTimeout(qt);
-      var v = e.target.value.trim().toLowerCase();
-      qt = setTimeout(function () { state.q = v; paint(); }, 130);
-    });
-
-    $('#sort').addEventListener('change', function (e) { state.sort = e.target.value; paint(); });
-
-    function resetAll() {
-      state.category.clear(); state.badge.clear(); state.region.clear();
-      state.q = ''; $('#q').value = ''; paint();
-    }
-    $('#reset').addEventListener('click', resetAll);
-    $('#emptyReset').addEventListener('click', resetAll);
-
-    document.addEventListener('keydown', function (e) {
-      if (e.key === '/' && document.activeElement !== $('#q')) {
-        var t = e.target.tagName;
-        if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
-        e.preventDefault(); $('#q').focus();
-      }
-      if (e.key === 'Escape' && document.activeElement === $('#q')) {
-        $('#q').value = ''; state.q = ''; paint(); $('#q').blur();
-      }
-    });
-
-    $('#subForm').addEventListener('submit', function (e) {
-      e.preventDefault();
-      var email = $('#subEmail').value.trim();
-      var msg = $('#subMsg');
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
-        msg.textContent = 'That email doesn’t look right.';
-        msg.classList.remove('ok');
+    function render() {
+      if (!sel.use) {
+        out.innerHTML = '<div class="callout">Pick what you are building. Three candidates appear here with the numbers that put them there — no signup, no email.</div>';
         return;
       }
-      msg.textContent = 'Thanks — this is a demo form; connect a mailer to actually collect emails.';
-      msg.classList.add('ok');
-      $('#subEmail').value = '';
+      var mix = volumeMix();
+      var ranked = ALL.map(function (m) { var r = score(m); r.m = m; return r; })
+        .filter(function (r) { return sel.constraint !== "open" || r.m.weights === "open"; })
+        .filter(function (r) { return sel.constraint !== "eu" || (r.m.residency && r.m.residency.eu); })
+        .sort(function (a, b) {
+          if (b.s !== a.s) return b.s - a.s;
+          var oa = effPrice(a.m).out, ob = effPrice(b.m).out;
+          return (oa === null ? Infinity : oa) - (ob === null ? Infinity : ob);
+        }).slice(0, 3);
+
+      out.innerHTML = ranked.map(function (r, i) {
+        var m = r.m, p = effPrice(m);
+        var monthly = monthlyCost(m, mix[0], mix[1], 0.35);
+        return '<div class="pick-card' + (i === 0 ? " top" : "") + '">' +
+          '<div class="pick-rank">' + (i === 0 ? "BEST FIT" : "ALSO CONSIDER") + "</div>" +
+          '<div class="pick-name">' + esc(m.name) + " <span class=\"mrow-vendor\">" + esc(m.vendor) + "</span></div>" +
+          '<div class="pick-why">' + esc(m.best_for) + (r.why.length ? " — " + esc(r.why.join(", ") + ".") : "") + "</div>" +
+          '<div class="pick-nums">' +
+            "<div><span>Input</span><b>" + money(p.in) + "</b></div>" +
+            "<div><span>Cached</span><b>" + money(p.cached_in) + "</b></div>" +
+            "<div><span>Output</span><b>" + money(p.out) + "</b></div>" +
+            "<div><span>Est. monthly</span><b>" + (monthly === null ? "unknown" : "$" + num(monthly, 0)) + "</b></div>" +
+          "</div>" +
+          '<div class="mrow-foot" style="margin-top:14px">' +
+            (p.status === "host" && p.via ? "<span>price via " + esc(p.via) + " (host)</span>" : "") +
+            '<a href="/models.html#m-' + esc(m.id) + '">Full record →</a>' +
+          "</div>" +
+        "</div>";
+      }).join("") +
+      '<p class="asof" style="margin-top:14px">Monthly figures use a representative token mix for the volume you chose. ' +
+      'Your mix decides the bill, not the headline price — run your own numbers on the <a href="/cost.html">Cost page</a>.</p>';
+    }
+
+    $$(".opt", w).forEach(function (b) {
+      b.addEventListener("click", function () {
+        var k = b.getAttribute("data-k"), v = b.getAttribute("data-v");
+        sel[k] = v;
+        $$('.opt[data-k="' + k + '"]', w).forEach(function (o) { o.classList.remove("on"); });
+        b.classList.add("on");
+        render();
+      });
     });
+    var defC = $('.opt[data-v="any"]', w), defV = $('.opt[data-v="small"]', w);
+    if (defC) defC.classList.add("on");
+    if (defV) defV.classList.add("on");
+    render();
+  }
 
-    var contact = $('#ftrContact');
-    if (contact && CONTENT.contact) contact.setAttribute('href', CONTENT.contact);
+  /* ---------------- cost maths ---------------- */
+  function monthlyCost(m, inTok, outTok, hitRate) {
+    var p = effPrice(m);
+    if (p.in === null || p.out === null) return null;
+    var ci = p.cached_in === null ? p.in : p.cached_in;
+    return inTok * (1 - hitRate) * p.in + inTok * hitRate * ci + outTok * p.out;
+  }
 
-    /* 页脚可见联系入口：让读者随时能反馈问题 */
-    if (CONTENT.contactEmail) {
-      var ce = document.getElementById('ftrContactEmail');
-      if (ce) {
-        ce.textContent = CONTENT.contactEmail;
-        ce.setAttribute('href', 'mailto:' + CONTENT.contactEmail);
+  function initCost() {
+    var f = $("#costForm");
+    if (!f) return;
+    var sel = $("#cModel");
+    var priced = ALL.filter(function (m) { return effPrice(m).out !== null; })
+      .sort(function (a, b) { return effPrice(a).out - effPrice(b).out; });
+    sel.innerHTML = priced.map(function (m) {
+      return '<option value="' + esc(m.id) + '"' + (m.id === "deepseek-v4.1-flash" ? " selected" : "") + ">" + esc(m.name) + " — " + esc(m.vendor) + "</option>";
+    }).join("");
+
+    function run() {
+      var m = priced.filter(function (x) { return x.id === sel.value; })[0] || priced[0];
+      if (!m) return;
+      var inTok = parseFloat($("#cIn").value) || 0;
+      var outTok = parseFloat($("#cOut").value) || 0;
+      var hit = (parseFloat($("#cHit").value) || 0) / 100;
+      var batch = $("#cBatch").checked;
+
+      var p = effPrice(m);
+      var pi = p.in, po = p.out, pc = p.cached_in === null ? p.in : p.cached_in;
+      if (batch && m.price && m.price.batch) {
+        pi = m.price.batch.in; po = m.price.batch.out;
+        if (m.price.batch.cached_in !== null && m.price.batch.cached_in !== undefined) pc = m.price.batch.cached_in;
       }
-      var cn = document.getElementById('ftrContactNote');
-      if (cn && CONTENT.contactLabel) {
-        cn.innerHTML = CONTENT.contactLabel + ' <a id="ftrContactEmail" href="mailto:' +
-          CONTENT.contactEmail + '">' + CONTENT.contactEmail + '</a>.';
+
+      var inputCost = inTok * (1 - hit) * pi + inTok * hit * pc;
+      var outputCost = outTok * po;
+      var total = inputCost + outputCost;
+
+      $("#cTotal").textContent = "$" + num(total, total < 100 ? 2 : 0);
+      $("#cBreak").innerHTML =
+        "<li><span>Input — " + num(inTok, 0) + "M tokens, " + Math.round(hit * 100) + "% cached</span><b>$" + num(inputCost, 2) + "</b></li>" +
+        "<li><span>Output — " + num(outTok, 0) + "M tokens</span><b>$" + num(outputCost, 2) + "</b></li>" +
+        "<li><span>Output share of the bill</span><b>" + (total ? Math.round(outputCost / total * 100) : 0) + "%</b></li>" +
+        "<li><span>Blended rate per 1M tokens</span><b>" + ((inTok + outTok) ? money(total / (inTok + outTok)) : "—") + "</b></li>" +
+        "<li><span>Projected annual run-rate</span><b>$" + num(total * 12, 0) + "</b></li>";
+
+      var note = $("#cNote");
+      if (batch && !(m.price && m.price.batch)) {
+        note.innerHTML = "<strong>No batch rate published for this model.</strong> Standard rates shown — do not budget a discount you have not seen on the provider's own page.";
+      } else if (p.status === "unknown") {
+        note.innerHTML = "<strong>No verified rate for this model.</strong> Nothing is billed because nothing was confirmed.";
+      } else if (m.price && m.price.notes) {
+        note.innerHTML = esc(m.price.notes);
+      } else {
+        note.innerHTML = "";
       }
+
+      var cmp = priced.map(function (x) { return { m: x, c: monthlyCost(x, inTok, outTok, hit) }; })
+        .filter(function (r) { return r.c !== null; }).sort(function (a, b) { return a.c - b.c; }).slice(0, 6);
+      var min = cmp[0] ? cmp[0].c : 0;
+      $("#cCmp").innerHTML = cmp.map(function (r) {
+        var pct = min ? Math.round((r.c / min - 1) * 100) : 0;
+        return "<tr" + (r.m.id === m.id ? ' style="background:var(--surface-3)"' : "") + ">" +
+          "<td>" + esc(r.m.name) + "</td>" +
+          '<td class="num">$' + num(r.c, r.c < 100 ? 2 : 0) + "</td>" +
+          '<td class="num">' + (pct === 0 ? "cheapest" : "+" + pct + "%") + "</td>" +
+          "</tr>";
+      }).join("");
+    }
+
+    ["#cIn", "#cOut", "#cHit", "#cBatch", "#cModel"].forEach(function (s) {
+      var el = $(s);
+      if (!el) return;
+      el.addEventListener("input", run);
+      el.addEventListener("change", run);
+    });
+    run();
+  }
+
+  /* ---------------- break-even: API vs owning GPUs ---------------- */
+  function initBreakEven() {
+    var f = $("#beForm");
+    if (!f) return;
+    var gsel = $("#beGpu");
+    (S.hardware || []).forEach(function (h) {
+      var o = document.createElement("option");
+      o.value = h.hr; o.textContent = h.gpu + " — " + h.vram + " GB — $" + h.hr + "/hr";
+      if (h.gpu.indexOf("H100 SXM") >= 0) o.selected = true;
+      gsel.appendChild(o);
+    });
+    var msel = $("#beModel");
+    var priced = ALL.filter(function (m) { return effPrice(m).out !== null; });
+    msel.innerHTML = priced.map(function (m) {
+      return '<option value="' + esc(m.id) + '"' + (m.id === "deepseek-v4.1-flash" ? " selected" : "") + ">" + esc(m.name) + "</option>";
+    }).join("");
+
+    function run() {
+      var hr = parseFloat(gsel.value) || 3.49;
+      var gpus = parseInt($("#beCount").value, 10) || 1;
+      var util = (parseFloat($("#beUtil").value) || 100) / 100;
+      var ops = (parseFloat($("#beOps").value) || 0) / 100;
+      var m = priced.filter(function (x) { return x.id === msel.value; })[0] || priced[0];
+      var p = effPrice(m);
+      var ratio = parseFloat($("#beRatio").value) || 4;
+      var tps = parseFloat($("#beTps").value) || 40;
+
+      var gpuMonthly = hr * 24 * 30.4 * util * gpus * (1 + ops);
+      var blended = p.out === null ? null : ((ratio * p.in) + p.out) / (ratio + 1);
+      var breakEven = blended ? gpuMonthly / blended : null;
+      var capacity = tps * 3600 * 24 * 30.4 * util * gpus / 1e6;
+
+      $("#beGpuCost").textContent = "$" + num(gpuMonthly, 0);
+      $("#beBlended").textContent = blended === null ? "unknown" : money(blended);
+      $("#bePoint").textContent = breakEven === null ? "unknown" : num(breakEven, 0) + "M";
+      $("#beCap").textContent = num(capacity, 0) + "M";
+
+      var v = $("#beVerdict");
+      if (breakEven === null) {
+        v.innerHTML = "No published rate for this model, so there is nothing to compare against.";
+      } else if (breakEven > capacity) {
+        v.innerHTML = "<b>Renting does not pay off on these numbers.</b> You would need about " + num(breakEven, 0) +
+          "M tokens/month to justify the GPU spend, but at the throughput you entered this box tops out near " + num(capacity, 0) +
+          "M output tokens/month. The API wins — unless your throughput assumption is wrong, and it is the single number most people overestimate.";
+      } else {
+        v.innerHTML = "<b>Self-hosting crosses over at roughly " + num(breakEven, 0) + "M tokens/month</b> — about " +
+          num(breakEven / 30.4, 1) + "M tokens a day. Below that you are paying for idle silicon; above it the GPU bill stops moving while the API bill keeps climbing. " +
+          "Capacity is the ceiling: this configuration tops out near " + num(capacity, 0) + "M output tokens/month.";
+      }
+      var s = $("#beSrc");
+      if (s && S.hardware_source) s.innerHTML = 'GPU rates: <a href="' + esc(S.hardware_source.url) + '" target="_blank" rel="nofollow noopener">' + esc(S.hardware_source.label) + "</a>. Throughput is your input, not a measured figure — the whole result swings on it.";
+    }
+
+    ["#beCount", "#beUtil", "#beOps", "#beRatio", "#beTps", "#beGpu", "#beModel"].forEach(function (s) {
+      var el = $(s);
+      if (!el) return;
+      el.addEventListener("input", run); el.addEventListener("change", run);
+    });
+    run();
+  }
+
+  /* ---------------- VRAM estimator ---------------- */
+  function initVram() {
+    var f = $("#vForm");
+    if (!f) return;
+    var sel = $("#vModel");
+    var presets = ALL.filter(function (m) { return m.params_b; });
+    sel.innerHTML = '<option value="">— enter parameters manually —</option>' + presets.map(function (m) {
+      return '<option value="' + m.params_b + '">' + esc(m.name) + " — " + num(m.params_b) + "B</option>";
+    }).join("");
+    var fits = null;
+
+    function run() {
+      var b = parseFloat($("#vParams").value) || 0;
+      var bp = parseFloat($("#vFmt").value) || 1;
+      var ctxK = parseFloat($("#vCtx").value) || 0;
+      var kvCoef = parseFloat($("#vKv").value) || 4.6e-6;
+      var weights = b * bp * 1.15;
+      var kv = ctxK * 1000 * b * kvCoef;
+      var total = weights + kv + 2;
+
+      $("#vWeights").textContent = num(weights, 1) + " GB";
+      $("#vKvOut").textContent = num(kv, 1) + " GB";
+      $("#vTotal").textContent = num(total, 1) + " GB";
+
+      fits = (S.hardware || []).filter(function (h) { return h.vram >= total; })
+        .sort(function (a, c) { return a.hr - c.hr; })[0];
+      var out = $("#vFits");
+      if (!b) {
+        out.textContent = "Enter a parameter count to size the box.";
+      } else if (fits) {
+        out.innerHTML = "Fits on <strong>" + esc(fits.gpu) + "</strong> (" + fits.vram + " GB) at $" + fits.hr +
+          "/hr rented. Treat " + num(total, 0) + " GB as the floor — real serving needs headroom for batching and activations.";
+      } else {
+        var big = (S.hardware || []).slice().sort(function (a, c) { return c.vram - a.vram; })[0];
+        out.innerHTML = "No single card here holds it. You are into tensor-parallel territory — two or more " + esc(big ? big.gpu : "large cards") +
+          ", plus interconnect overhead the estimator above does not model.";
+      }
+
+      var box = $("#vCards");
+      if (box) {
+        box.innerHTML = (S.hardware || []).map(function (h) {
+          var ok = h.vram >= total;
+          return "<tr" + (ok ? ' style="background:var(--surface-3)"' : "") + "><td>" + esc(h.gpu) + "</td>" +
+            '<td class="num">' + h.vram + " GB</td>" +
+            '<td class="num">$' + h.hr + "/hr</td>" +
+            '<td class="num">$' + num(h.hr * 24 * 30.4, 0) + "/mo</td>" +
+            "<td>" + (ok ? '<span class="tag ok">fits</span>' : '<span class="tag">too small</span>') + "</td></tr>";
+        }).join("");
+      }
+    }
+    sel.addEventListener("change", function () { if (sel.value) { $("#vParams").value = sel.value; run(); } });
+    ["#vParams", "#vFmt", "#vCtx", "#vKv"].forEach(function (s) {
+      var el = $(s);
+      if (!el) return;
+      el.addEventListener("input", run); el.addEventListener("change", run);
+    });
+    run();
+  }
+
+  /* ---------------- content renderers ---------------- */
+  function initContent() {
+    var c = $("#channels");
+    if (c && S.channels) {
+      c.innerHTML = S.channels.map(function (ch) {
+        return '<article class="card"><h3>' + esc(ch.name) + "</h3>" +
+          "<p><strong>Suits:</strong> " + esc(ch.who) + "</p>" +
+          "<p><strong>Money:</strong> " + esc(ch.price) + "</p>" +
+          "<p><strong>Paperwork:</strong> " + esc(ch.invoice) + "</p>" +
+          "<p><strong>What bites:</strong> " + esc(ch.risk) + "</p>" +
+          '<p class="mrow-note" style="margin-top:14px"><strong>Check before signing:</strong> ' + esc(ch.watch) + "</p>" +
+          '<div class="tag-row" style="margin-top:12px">' + (ch.examples || []).map(function (e) { return '<span class="tag">' + esc(e) + "</span>"; }).join("") + "</div>" +
+          "</article>";
+      }).join("");
+    }
+
+    var ec = $("#entCheck");
+    if (ec && S.enterpriseChecklist) {
+      ec.innerHTML = S.enterpriseChecklist.map(function (i) {
+        return '<li><span class="mark">?</span><div><b>' + esc(i.q) + "</b>" + esc(i.why) + "</div></li>";
+      }).join("");
+    }
+
+    var en = $("#engines");
+    if (en && S.engines) {
+      en.innerHTML = S.engines.map(function (e) {
+        return "<tr><td><strong>" + esc(e.name) + "</strong></td><td>" + esc(e.best) + "</td><td>" + esc(e.notes) + "</td><td>" + esc(e.ops) + "</td></tr>";
+      }).join("");
+    }
+
+    var qt = $("#quant");
+    if (qt && S.quant) {
+      qt.innerHTML = S.quant.map(function (q) {
+        return "<tr><td><strong>" + esc(q.fmt) + '</strong></td><td class="num">' + q.bytes.toFixed(2) + " bytes/param</td><td>" + esc(q.note) + "</td></tr>";
+      }).join("");
+    }
+
+    var hw = $("#hwTable");
+    if (hw && S.hardware) {
+      hw.innerHTML = S.hardware.map(function (h) {
+        return "<tr><td><strong>" + esc(h.gpu) + '</strong></td><td class="num">' + h.vram + " GB</td>" +
+          '<td class="num">$' + h.hr + "/hr</td>" +
+          '<td class="num">$' + num(h.hr * 24 * 30.4, 0) + "/mo</td>" +
+          "<td>" + esc(h.note) + "</td></tr>";
+      }).join("");
+      var hs = $("#hwSrc");
+      if (hs && S.hardware_source) hs.innerHTML = 'Source: <a href="' + esc(S.hardware_source.url) + '" target="_blank" rel="nofollow noopener">' + esc(S.hardware_source.label) + "</a>.";
+    }
+
+    var pm = $("#moves");
+    if (pm && S.priceMoves) {
+      pm.innerHTML = S.priceMoves.map(function (m) {
+        return '<article class="mrow"><div class="mrow-top">' +
+          '<span class="tag info">' + esc(m.date) + "</span>" +
+          '<span class="mrow-name" style="font-size:15px">' + esc(m.what) + "</span>" +
+          '</div><p class="mrow-note">' + esc(m.detail) + "</p>" +
+          '<div class="mrow-foot"><a href="' + esc(m.source.url) + '" target="_blank" rel="nofollow noopener">' + esc(m.source.label) + " →</a></div></article>";
+      }).join("");
+    }
+
+    var fq = $("#faqList");
+    if (fq && S.faq) {
+      fq.innerHTML = S.faq.map(function (i) {
+        return "<details><summary>" + esc(i.q) + '</summary><div class="faq-a">' + esc(i.a) + "</div></details>";
+      }).join("");
     }
   }
 
-  /* ---------- header shadow ---------- */
-  function shadow() {
-    var h = $('#hdr');
-    var on = function () { h.style.boxShadow = window.scrollY > 4 ? '0 1px 3px rgba(8,8,10,.06)' : 'none'; };
-    window.addEventListener('scroll', on, { passive: true }); on();
-  }
-
-  /* ---------- init ---------- */
-  buildChips();
-  renderMeta();
-  renderPick();
-  renderFaq();
-  paint();
-  bind();
-  shadow();
+  /* ---------------- go ---------------- */
+  initLibrary();
+  initCompare();
+  initPick();
+  initCost();
+  initBreakEven();
+  initVram();
+  initContent();
 })();

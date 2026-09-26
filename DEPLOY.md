@@ -121,3 +121,17 @@ git push -u origin main
 
 - 订阅表单（`index.html` 里 `#subForm`）目前只做前端校验，没接邮件服务；上线前若要真收邮箱，建议用 Cloudflare Workers + 第三方邮件服务（Buttondown/Mailchimp），或先接 Formspree 之类
 - **数据缺口**：Google AI Studio 和 Google Colab 尚未核实，模板在 `data/templates/`，补法见 `data/TBD.md`；补完复制成 `data/offers-google.json` 跑 `node tools/merge-offers.js` 再 `git push` 即可上线
+
+---
+
+## 2026-09-26 · Repositioning: from free-tier directory to model-selection desk
+
+The old site was a directory of free AI API / GPU tiers. It has been replaced.
+
+- **Positioning:** "Sneak past the sticker price" — model selection and cost guidance for people who pay the invoice.
+- **IA:** `index.html` (3-question picker) · `models.html` (library) · `cost.html` (monthly + break-even calculators) · `buy.html` (5 channels + procurement) · `deploy.html` (VRAM estimator, engines, GPU rates) · `market.html` (price watch) · `method.html` (methodology).
+- **Data:** `site/data/models.js` (24 models) + `site/data/site.js` (channels, hardware, engines, FAQ, price moves). Every price carries channel, tier, date and source URL; unreachable official pages stay empty.
+- **Tests:** `node tools/smoke.js` (static) and `NODE_PATH=<node-workspace>/node_modules node tools/render-test.js` (jsdom render).
+- **Old free-tier data** moved to `site/_archive/free-tier-era/` rather than deleted.
+
+Deploy is unchanged: push to `main`, Cloudflare Pages builds from the `site/` directory.

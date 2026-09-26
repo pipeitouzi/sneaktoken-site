@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Methodology — how we check a price, and what we refuse to publish | SneakToken</title>
+<meta name="description" content="Every price is read off the provider's own page and dated. When we cannot reach it, we print nothing. No rankings, no aggregator numbers, no pay-to-list.">
+<link rel="canonical" href="https://sneaktoken.com/method.html">
+<meta name="robots" content="index,follow">
+<meta property="og:title" content="Methodology — how we check a price | SneakToken">
+<meta property="og:description" content="The rule is simple: if we could not read it on the provider's own page, we do not print it.">
+<meta property="og:url" content="https://sneaktoken.com/method.html">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230A0A0B'/%3E%3Cpath d='M9 21.5 15.5 10h2.2L11.2 21.5z' fill='%235BE9A8'/%3E%3Ccircle cx='22' cy='13' r='2.4' fill='%235BE9A8'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<a class="skip" href="#method">Skip to the methodology</a>
+
+<header class="hdr" id="hdr">
+  <div class="wrap hdr-in">
+    <a class="brand" href="/" aria-label="SneakToken home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="18" height="18"><path d="M9 21.5 15.5 10h2.2L11.2 21.5z" fill="currentColor"/><circle cx="22" cy="12.5" r="2.4" fill="currentColor"/></svg>
+      </span>
+      <span class="brand-txt">sneak<span class="brand-accent">token</span></span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="/index.html">Pick</a>
+      <a href="/models.html">Models</a>
+      <a href="/cost.html">Cost</a>
+      <a href="/buy.html">Buy</a>
+      <a href="/deploy.html">Deploy</a>
+      <a href="/market.html">Price watch</a>
+    </nav>
+    <span class="hdr-spacer"></span>
+    <a class="btn btn-sm btn-solid" href="/cost.html">Price my bill</a>
+    <button class="nav-toggle" type="button" aria-label="Menu"><span aria-hidden="true">☰</span></button>
+  </div>
+</header>
+
+<section class="hero" style="padding-bottom:30px">
+  <div class="wrap">
+    <div class="hero-eyebrow"><span class="pulse" aria-hidden="true"></span> Transparency</div>
+    <h1 style="font-size:clamp(30px,4.4vw,48px)">A directory you cannot<br>trust is worse than <em>none</em>.</h1>
+    <p class="hero-sub">
+      Everyone in this market has an incentive to publish a number that flatters them. Ours is to publish
+      only the numbers we can point at, and to say nothing at all when we cannot.
+    </p>
+  </div>
+</section>
+
+<section class="band" id="method">
+  <div class="wrap wrap-narrow">
+    <div class="sec-head"><h2 class="sec-h">How a price gets onto this site</h2></div>
+    <div class="prose">
+      <p>We open the provider's own pricing page and read the numbers off it. Not a model catalogue, not a comparison site, not a blog post summarising the launch — the page the vendor maintains, because that is the one they will bill you against.</p>
+      <p>Four things get recorded with each number: <strong>the channel it was quoted on</strong>, the processing tier (standard, batch, fast, off-peak), the date we read it, and the URL. Drop any one of those and two prices for the same model stop being comparable — which is how budget spreadsheets end up wrong by a factor of seven.</p>
+      <p>Prices live in a snapshot store. Each pass is diffed against the last, so a change shows up as a dated entry in the <a href="/market.html">price watch</a> instead of a quiet edit. If you bookmarked a number last month, you can find out what happened to it.</p>
+      <p>When a fetch fails, nothing is overwritten. The old value keeps its old date. We would rather show you a stale number with an honest timestamp than a fresh guess.</p>
+    </div>
+
+    <h2 class="sec-h" style="margin-top:44px">What we refuse to do</h2>
+    <ul class="checks">
+      <li><span class="mark">×</span><div><b>No aggregator numbers</b>Model catalogues and price trackers are frequently months behind. We never use them to fill a gap, which is why some rows on this site have empty price cells.</div></li>
+      <li><span class="mark">×</span><div><b>No capability rankings</b>We record verifiable facts — context window, licence, modalities, tool calling. Quality is your call to make on your own prompts, and a score without an eval harness is decoration.</div></li>
+      <li><span class="mark">×</span><div><b>No invented defaults</b>Parameter counts, throughput and token mixes are either published or marked unknown. The calculators ask you for the numbers because your numbers are the only ones that matter.</div></li>
+      <li><span class="mark">×</span><div><b>No pay-to-list</b>Nobody pays for placement, and a model is not included or excluded because of a commercial relationship.</div></li>
+      <li><span class="mark">×</span><div><b>No keys, no proxying, no data</b>This is a static site. We never see your API keys and never sit between you and a provider.</div></li>
+    </ul>
+
+    <h2 class="sec-h" style="margin-top:44px">Money</h2>
+    <div class="prose">
+      <p>Some outbound links — mostly GPU rental — are affiliate links and earn a commission if you sign up. They are labelled where they appear, and full details are on the <a href="/disclosure.html">disclosure page</a>.</p>
+      <p>What that never touches is the price table. The rates printed here are the providers' published rates regardless of whether a link earns anything. A directory that quietly reorders by commission is not a directory, it is an ad.</p>
+    </div>
+
+    <h2 class="sec-h" style="margin-top:44px">Corrections</h2>
+    <div class="prose">
+      <p>If a number here disagrees with the provider's page, email <a href="mailto:pipeitouzi@gmail.com">pipeitouzi@gmail.com</a>. We re-read the source, correct it if we are wrong, and date the correction. Corrections are logged rather than quietly edited — the history is the useful part.</p>
+      <p class="prose-note"><strong>Standing caveat:</strong> providers change pricing without notice and sometimes without announcing it. Confirm on the provider's own page before you commit budget to anything you read here.</p>
+    </div>
+  </div>
+</section>
+
+<section class="band band-alt">
+  <div class="wrap wrap-narrow">
+    <div class="sec-head"><h2 class="sec-h">FAQ</h2></div>
+    <div class="faq" id="faqList"></div>
+  </div>
+</section>
+
+<footer class="ftr">
+  <div class="wrap ftr-in">
+    <div class="ftr-brand">
+      <span class="brand-txt">sneak<span class="brand-accent">token</span></span>
+      <p class="ftr-tag">Sneak past the sticker price. Model selection and cost guidance for people who pay the invoice.</p>
+    </div>
+    <div class="ftr-nav">
+      <h3>Desk</h3>
+      <a href="/index.html">Pick a model</a>
+      <a href="/models.html">Model library</a>
+      <a href="/cost.html">Cost calculators</a>
+      <a href="/buy.html">Buying channels</a>
+    </div>
+    <div class="ftr-nav">
+      <h3>Reference</h3>
+      <a href="/deploy.html">Self-hosting</a>
+      <a href="/market.html">Price watch</a>
+      <a href="/method.html">Methodology</a>
+    </div>
+    <div class="ftr-nav">
+      <h3>Legal</h3>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/disclosure.html">Affiliate disclosure</a>
+    </div>
+  </div>
+  <div class="wrap ftr-bot">
+    <p>Prices change without notice. Confirm on the provider's own pricing page before you commit budget.</p>
+    <p>Contact: <a href="mailto:pipeitouzi@gmail.com">pipeitouzi@gmail.com</a></p>
+    <p>© <span id="year">2026</span> sneaktoken.com</p>
+  </div>
+</footer>
+
+<script src="data/models.js"></script>
+<script src="data/site.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

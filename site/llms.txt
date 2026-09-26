@@ -1,0 +1,85 @@
+# SneakToken
+
+> A model-selection desk for people who pay the invoice. Input, cached-input and output prices per 1M tokens (USD), each read off the provider's own pricing page and dated. Five buying channels. Self-hosting sizing and break-even maths.
+
+Rules this site follows:
+- A price is only published with four things attached: the channel it was quoted on, the processing tier, the date checked, and the source URL.
+- If the provider's own page cannot be read, the price is left empty. No aggregator numbers, ever.
+- No capability rankings. Only verifiable facts: context window, licence, modalities, tool calling, self-host feasibility.
+- Nobody pays for placement.
+
+## Pages
+- / — three-question model picker
+- /models.html — full library, filterable, with sources on every record
+- /cost.html — monthly cost calculator + API vs GPU break-even calculator
+- /buy.html — five buying channels + enterprise procurement checklist
+- /deploy.html — VRAM estimator, serving engines, GPU rental rates
+- /market.html — dated price-change log and current snapshot
+- /method.html — methodology, what we refuse to publish, corrections policy
+
+## Prices (USD per 1M tokens, checked 2026-09-26)
+
+Format: model — input / cached input / output (channel)
+
+OpenAI (source: developers.openai.com/api/docs/pricing)
+- gpt-6-astra — 10.00 / 1.00 / 50.00
+- gpt-5.6-sol — 4.00 / 0.40 / 20.00 (promotional; list 5.00 / 0.50 / 30.00, runs at least to 2026-11-21)
+- gpt-5.6-terra — 2.00 / 0.20 / 12.00
+- gpt-5.6-luna — 0.20 / 0.02 / 1.20
+- Above 272K context: input x2, cached input x2, output x1.5. Regional processing +10%. Batch 50% off.
+
+Anthropic (source: claude.com/pricing)
+- fable-5.1 — 10.00 / 0.25 / 50.00
+- claude-opus-5.5 — 4.00 / 0.20 / 20.00
+- claude-sonnet-5 — 2.00 / 0.20 / 10.00
+- claude-haiku-4.5 — 1.00 / 0.10 / 5.00
+- Cache prices are 5-minute TTL. US-only inference 1.1x. Batch 50% off.
+
+Google (source: ai.google.dev/gemini-api/docs/pricing)
+- gemini-3.5-flash — 1.50 / 0.15 / 9.00 (plus $1.00 per 1M tokens per hour of cache storage)
+
+xAI (source: docs.x.ai — unreachable at check time)
+- grok-4.6 — unknown / unknown / unknown
+- grok-4.5 — unknown / unknown / unknown
+
+DeepSeek (source: api-docs.deepseek.com/quick_start/pricing)
+- deepseek-v4-pro — 1.32 / 0.044 / 3.96 (off-peak exactly half: 0.66 / 0.022 / 1.98)
+- deepseek-flash (V4.1 Flash) — 0.30 / 0.006 / 1.20 (off-peak 0.15 / 0.003 / 0.60)
+- Off-peak applies outside 01:00-04:00 and 06:00-10:00 UTC, Mon-Fri, excluding Chinese public holidays.
+
+Mistral (source: docs.mistral.ai/inference/pricing)
+- mistral-large-3 — 0.50 / 0.05 / 1.50 (Apache 2.0, 675B total / 41B active)
+- mistral-medium-3.5 — 1.50 / 0.15 / 7.50 (128B)
+- mistral-small-4 — 0.15 / 0.015 / 0.60 (Apache 2.0)
+- ministral-3-8b — 0.15 / 0.015 / 0.15
+- Regional inference +10%. Cached input ~90% off.
+
+Open-weight models, hosted (source: together.ai/pricing)
+- gpt-oss-120b — 0.15 / unknown / 0.60 (Apache 2.0, no first-party endpoint)
+- GLM-5.3 — 1.40 / 0.26 / 4.40 (also hosted by Mistral at 1.40 / unknown / 4.40)
+- GLM-5.3-Flash — 0.15 / 0.03 / 0.50
+- Kimi K3 — 3.00 / 0.30 / 15.00
+- Qwen3.8-2.4T-A95B — 2.00 / 0.25 / 6.00
+- Qwen3.8 Flash — 0.09 / unknown / 0.28
+- MiniMax M3 — 0.30 / 0.06 / 1.20
+- DeepSeek V4 Pro 0813 — 1.32 / 0.13 / 3.96
+- DeepSeek V4.1 Flash — 0.30 / 0.006 / 1.20
+
+GPU rental, on-demand dedicated pods (source: runpod.io/pricing, updated 2026-09-13)
+- B300 288GB — $7.89/hr
+- B200 180GB — $6.79/hr
+- H200 141GB — $4.59/hr
+- H100 SXM 80GB — $3.49/hr
+- H100 PCIe 80GB — $2.89/hr
+- A100 SXM 80GB — $1.59/hr
+- RTX PRO 6000 96GB — $2.09/hr
+- L40S 48GB — $1.09/hr
+- RTX 5090 32GB — $0.99/hr
+- RTX 4090 24GB — $0.74/hr
+- RTX 3090 24GB — $0.50/hr
+
+## Standing caveats
+- Providers change pricing without notice. Confirm on their own page before committing budget.
+- Output tokens are usually 3-5x input, and decide most invoices.
+- Cached input can be 10-50x cheaper than input; it is the biggest lever for workloads with stable prefixes.
+- Self-hosting only wins above a crossover volume, and only if the hardware can physically push that throughput.
