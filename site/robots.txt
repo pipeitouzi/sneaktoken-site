@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /data/
 
-Sitemap: https://sneaktoken.com/sitemap.xml
+Sitemap: https://www.sneaktoken.com/sitemap.xml
